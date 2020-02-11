@@ -19,6 +19,27 @@
 .data # the data for the program
 .align 0 # byte-align the 45 byte space declared next
 buffer: .space 45 # allocate 45 bytes as a read buffer for string input
+prompt:.asciiz "Please enter a string of size less than 40 characters"
+doh:.asciiz "The characters have to be a-z and A-Z!\n"
+.text # read from standard into a character array
+.globl main # declare the global main method
+
+main: jal print_prompt # prompt the user, then read how many
+                       # values will be input for the array
+                       
+                       
+print_prompt: li $v0, 4 # syscall 4 = write string (P&H A-44)
+              la $a0, prompt # load the memory address or prompt
+              syscall # output the initial prompt
+              
+              li $v0, 8 # syscall 8 = read string (P&H A-44)
+              la $a0, buffer # load the buffer as an argument
+              li $a1, 41 # allocate a length of 41 for end line
+                         # character and new line character
+              move $t0, $a0 # move the contents of the buffer from
+                            # register a0 to register t0
+              syscall      # read the string
+              jr $ra # jump back to the caller
 
 
 
