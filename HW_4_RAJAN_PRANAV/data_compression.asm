@@ -19,13 +19,14 @@
 .data # the data for the program
 .align 0 # byte-align the 45 byte space declared next
 buffer: .space 45 # allocate 45 bytes as a read buffer for string input
-prompt:.asciiz "Please enter a string of size less than 40 characters"
+prompt:.asciiz "Please enter a string of size less than 40 characters: "
 doh:.asciiz "The characters have to be a-z and A-Z!\n"
 .text # read from standard into a character array
 .globl main # declare the global main method
 
 main: jal print_prompt # prompt the user, then read how many
                        # values will be input for the array
+      jal is_valid     # determine whether the string is valid input
                        
                        
 print_prompt: li $v0, 4 # syscall 4 = write string (P&H A-44)
@@ -41,6 +42,30 @@ print_prompt: li $v0, 4 # syscall 4 = write string (P&H A-44)
               syscall      # read the string
               jr $ra # jump back to the caller
 
+is_valid: addi $sp, $sp, -12 # adjust the stack for 3 variables
+	  sw $t0, 8($sp) # save register t0 for use later. Stores the 
+	                 # head of the string char array
+	  sw $s0, 4($sp) # save register s0 for use later. Stores the
+	                 # i value
+	  sw $t1, 0($sp) # save register t1 for use later. Store the
+	                 # loop tracking value
+	  
+	  addi $s0, $zero, 0 # update the i counter to 0
+	  # addi $t1, $zero, 39 # length of the string
+	  
+Loop:   addi $t4, $zero, 10 
+	sll $t2, $s0, 0 # register t2 = i * 1
+         add $t2, $t2, $t0 # address of char[i]
+         lb $t3, 0($t2) # register t3 = char[i]
+         beq $t3, $t4, Exit # exit if the current character is the new line character
+         addi $s0, $s0, 1
+         j Loop
+
+Exit:
+	 li $v0, 10 # syscall 10 = Exit
+	 syscall
+	 jr $ra
+	  
 
 
 
