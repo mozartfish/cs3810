@@ -21,6 +21,7 @@
 buffer: .space 45 # allocate 45 bytes as a read buffer for string input
 prompt:.asciiz "Please enter a string of size less than 40 characters: "
 doh:.asciiz "The characters have to be a-z and A-Z!\n"
+exit_statement:.asciiz "The end of the loop"
 .text # read from standard into a character array
 .globl main # declare the global main method
 
@@ -53,23 +54,53 @@ is_valid: addi $sp, $sp, -12 # adjust the stack for 3 variables
 	  addi $s0, $zero, 0 # update the i counter to 0
 	  # addi $t1, $zero, 39 # length of the string
 	  
-Loop:   addi $t4, $zero, 10 
+Loop:   addi $t4, $zero, 10 # register t4 = 10. Stores the ASCII for new line
 	sll $t2, $s0, 0 # register t2 = i * 1
-         add $t2, $t2, $t0 # address of char[i]
-         lb $t3, 0($t2) # register t3 = char[i]
-         beq $t3, $t4, Exit # exit if the current character is the new line character
-         addi $s0, $s0, 1
-         j Loop
+        add $t2, $t2, $t0 # address of char[i]
+        lb $t3, 0($t2) # register t3 = char[i]
+        beq $t3, $t4, Exit # exit if the current character is the new line character
+        j check_1 # check if current character is < 65
+        addi $s0, $s0, 1 # i = i + 1
+        j Loop
 
 Exit:
-	 li $v0, 10 # syscall 10 = Exit
-	 syscall
-	 jr $ra
-	  
+	li $v0, 4 # syscall 4 = write string
+	la $a0, exit_statement
+	syscall
+	li $v0, 10 # syscall 10 = Exit
+	syscall
+	jr $ra
+	 
+Error_Message: li $v0, 4 # syscall 4 = write string
+		la $a0, doh # print the error message
+		syscall
+		jr $ra
+
+check_1: slti $t5, $t3, 65 # check if the current char is less than 65
+	 bne $t5, $zero, Error_Message # if 1, call error message instruction
+	 j check_2 # if zero then move on to the second check
+
+check_2: slti $t5, $t3, 97 # check if current char[i] < 97
+	 beq $t5, $zero, check_3 # if current char[i] < 97 jump to check_3
+	 j check_4 # otherwise jump to check 4
+
+check_3: addi $t6, $zero, 90
+	 sgt $t7, $t3, $t6 # check if current char[i] > 90
+	 beq $t7, $zero, Error_Message # if 1, call error message instruction
+
+check_4: addi $t6, $zero, 122
+	 sgt $t7, $t3, $t6 # check if current char[i] > 122
+	 bne $t7, $zero, Error_Message # if 1, call error message instruction
+	 addi $s0, $s0, 1 # i = i + 1
+	 j Loop # jump back to the for loop
+	
+	 
+	
+	
 
 
 
-              
+
               
               
                         
