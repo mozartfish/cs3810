@@ -124,7 +124,12 @@ compress_data:	addi $sp, $sp, -8 # adjust the stack for 1 variable
 compress_Loop:	sll $t2, $s1, 0 # register t2 = i * 1
 		add $t2, $t2, $s0 # register t2 = address of char[i]
 		lb $t3, 0($t2) # current char[i]
+		li $t4, 10 # load the ASCII value for new line feed into register t4
+		beq $t3, $t4, compress_Loop_Exit # if we reach the new line feed ASCII, exit the loop
 		bne $t3, $s2 update # if the current character is not the same then update the compressed string
+		add $s3, $s3, 1 # counter = counter + 1
+		add $s1, $s1, 1 # i = i + 1
+		j compress_Loop # jump back to the top of the compression loop
 
 update:		beq $s1, $zero, first_update # update at the start
 
@@ -133,7 +138,8 @@ first_update:	add $s2, $s2, 1 # update the counter to 1
 		add $t0, $t0, $s5 # register t0 = address of the buffer
 		sb $t3, 0($t0) # store value of char[0]
 		add $s4, $s4, 1 # j = 1 => the next index in the new array
-		
+
+compress_Loop_Exit: j Exit_Loop
 		
 		
 		
