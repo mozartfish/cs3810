@@ -19,12 +19,11 @@
 .data #  store the items below this line in the data segment(P&H A-48, A-21)
 buffer: .align 0 # align data elements to appropriate memory boundaries (MARS Notes)
 	.space 45 # allocate 45 bytes as a read buffer for string input (MARS Notes)
-buffer_result: .align 0 # align data elements to appropriate memory boundaries (MARS Notes)
-		.space 52 # allocate 52 bytes as a write buffer for a string input (MARS Notes)
 prompt: .asciiz "Please enter a string of size less than 40 characters: " # null terminated string (P&H A-48)
 error_prompt: .asciiz "The characters have to be a-z and A-Z!\n" # null terminated string (P&H A-48)
 empty_prompt: .asciiz "An empty string was entered!\n" # null terminated string (P&H A-48)
-exit_statement: .asciiz "The string contains valid input" # null terminated string (P&H A-48)
+# exit_statement: .asciiz "The string contains valid input!\n" # null terminated string (P&H A-48) # for debugging purposes
+
 
 .text # store the items below this line (Program Instructions) in the text segment (P&H A-21)
 .globl main # declare that main is global and can be referenced from other files (P&H A-48, A-47)
@@ -42,7 +41,6 @@ print_prompt:	li $v0, 4 # syscall 4 = write string (P&H A-44)
 		la $a0, buffer # load the address of the buffer to write from stdin (MARS Notes)
 		li $a1, 41 # allocate a length of 41 for the new line character and terminating character (Duke MIPS Examples)
 		move $s0, $a0 # move the address of the buffer to register s0 for use later
-		la $s5, buffer_result # load the address of the buffer result into register s5
 		syscall # read the string into the buffer (located at register a0) and move it to register s0
 		jr $ra # jump back to the caller (main label)
 		
@@ -106,45 +104,119 @@ Error_Message:	li $v0, 4 # syscall 4 = write string (P&H A-44)
 		syscall # quit the program
 		
 		
-Exit_Loop:	li $v0, 4 # syscall 4 = write string (P&H A-44)
-		la $a0, exit_statement # load the address for the exit statement
-		syscall # write the exit statement
+Exit_Loop:	# li $v0, 4 # syscall 4 = write string (P&H A-44). For debugging purposes
+		# la $a0, exit_statement # load the address for the exit statement. For debugging purposes
+		# syscall # write the exit statement. For debugging purposes
 		lw $s0, 0($sp) # restore register s0 to caller
 		addi $sp, $sp, 4 # adjust stack to delete 1 item
 		jr $ra # jump back to caller
 		
-compress_data:	addi $sp, $sp, -8 # adjust the stack for 1 variable
-		sw $s0, 4($sp) # save register s0 for use later. Storee the address for the head of the char array
-		sw $s5, 0($sp) # save register s5 for use later. store the location of the result buffer
+compress_data:	addi $sp, $sp, -4 # adjust the stack for 1 variable
+		sw $s0, 0($sp) # save register s0 for use later. Storee the address for the head of the char array
 		addi $s1, $zero, 0 # initialize the i counter to 0
 		addi $s2, $zero, 0 # initialize a previous variable to null
-		addi $s3, $zero, 0 #initialize a variable to keep track of the character count
-		addi $s4, $zero, 0 # initialize the j counter to 0
+		addi $s3, $zero, 0 # initialize a variable to keep track of the character count
 		
 compress_Loop:	sll $t2, $s1, 0 # register t2 = i * 1
 		add $t2, $t2, $s0 # register t2 = address of char[i]
 		lb $t3, 0($t2) # current char[i]
-		li $t4, 10 # load the ASCII value for new line feed into register t4
+		li $t4, 0 # load the ASCII value for null string termination
 		beq $t3, $t4, compress_Loop_Exit # if we reach the new line feed ASCII, exit the loop
 		bne $t3, $s2 update # if the current character is not the same then update the compressed string
 		add $s3, $s3, 1 # counter = counter + 1
-		add $s1, $s1, 1 # i = i + 1
+		addi $s1, $s1, 1 # i = i + 1
 		j compress_Loop # jump back to the top of the compression loop
 
-update:		beq $s1, $zero, first_update # update at the start
+update:		beq $s1, $zero, first_update # execute this at the start of the array
+		j print_compression
+first_update:	addi $s3, $s3, 1 # update the counter to 1
+		add $s2, $t3, $s2 # update the previous character so it now contains char[0]
+		addi $s1, $s1, 1 # i = i + 1
+		j compress_Loop # jump back to the compress loop
 
-first_update:	add $s2, $s2, 1 # update the counter to 1
-		sll $t0, $s4, 0 # register t0 = j * 1
-		add $t0, $t0, $s5 # register t0 = address of the buffer
-		sb $t3, 0($t0) # store value of char[0]
-		add $s4, $s4, 1 # j = 1 => the next index in the new array
+print_compression:	move $a0, $s2 # move the current char to register a0 for printing
+			li $v0, 11 # syscall 11 = print char
+			syscall
+			j count_check # check the count value
 
-compress_Loop_Exit: j Exit_Loop
+count_check: slti $t1, $s3, 20 # check if counter < 20
+				# 1 if yes
+				# 0 otherwise
+	     bne $t1, $zero, count_check_2 # if counter < 20 jump to check 2
+	     j count_check_3 # otherwise jump to check 3
+	     
+count_check_2:	slti $t1, $s3, 10 # check if counter < 10
+				   # 1 if yes
+				   # 0 otherwise
+		bne $t1, $zero print_one # jump to print one statement
+		li $v0, 11 # syscall 11 = print char
+		addi $a0, $zero, 49 # ascii for 1
+		syscall # print the 10's place
+		subi $s3, $s3, 10 # subtract by 10
+		addi $s3, $s3, 48 # add 48 to get the ascii value 
+		move $a0, $s3, # move the term from register s3 to register a0
+		li $v0, 11 # syscall 11 = print char
+		syscall
+		addi $s3, $zero, 1 # update the counter to 1
+		add $s2, $t3, $zero # update the previous character
+		addi $s1, $s1, 1 # i = i + 1
+		j compress_Loop # jump back to the compression loop
 		
-		
-		
-		
+count_check_3:	slti $t1, $s3, 30 # check if the counter < 30
+				  # 1 if yes
+				  # 0 otherwise
+		beq $t1, $zero, count_check_4 # jump to check 4 otherwise
+		li $v0, 11 # syscall 11 = print char
+		addi $a0, $zero, 50 # ascii for 2
+		syscall # print the 10's place
+		subi $s3, $s3, 20 # subtract by 20
+		addi $s3, $s3, 48 # add 48 to get ascii value
+		move $a0, $s3 # move the term from register s3 to register a0
+		li $v0, 11 # syscall 11 = print char
+		syscall
+		addi $s3, $zero, 1 # update the counter to 1
+		add $s2, $t3, $zero # update the previous character
+		addi $s1, $s1, 1 # i = i + 1
+		j compress_Loop # jump back to the compression loop
 
+count_check_4:	slti $t1, $s3, 40 # check if the counter < 40
+				   # 1 if yes
+				   # 0 otherwise
+		beq $t1, $zero, Error_Message # print the error message
+		li $v0, 11 # syscall 11 = print char
+		addi $a0, $zero, 51 # ascii for 3
+		syscall # print the 10's place
+		subi $s3, $s3, 30 # subtract by 30
+		addi $s3, $s3, 48 # add 48 to get the ascii value
+		move $a0, $s3, # move the term from register s3 to register a0
+		li $v0, 11 # syscall 11 = print char
+		syscall
+		addi $s3, $zero, 1 # update the counter to 1
+		add $t2, $t3, $zero # update the previous character
+		addi $s1, $s1, 1 # i = i + 1
+		j compress_Loop # jump back to the compression loop
+		
+print_one:	li $t1, 1 # load 1 into register t1
+		beq $s3, $t1, print_special # handle the single haracter occurrences
+		addi  $s3, $s3, 48 # get the ASCII value for the character
+		move $a0, $s3 # move the value from register s3 to register a0
+		li $v0, 11 # syscall 11 = print char
+		syscall
+		addi $s3, $zero, 1 # update the counter to 1
+		add $s2, $t3, $zero # update the previous character
+		addi $s1, $s1, 1 # i = i + 1
+		j compress_Loop # jump back to the compression loop
+		
+print_special:	add $s2, $t3, $zero # update the previous character
+		addi $s3, $zero, 1 # update counter to 1
+		addi $s1, $s1, 1 # i = i + 1
+		j compress_Loop # jump back to the compression loop
+	     
+compress_Loop_Exit:	lw $s0, 0($sp) # restore register s0 to caller
+			addi $sp, $sp, 4 # adjust stack to delete 1 item
+			jr $ra # jump back to caller
+		
+		
 Exit_Main:	li $v0, 10 # syscall 19 = exit (P&H A-44)
 		syscall
 		
