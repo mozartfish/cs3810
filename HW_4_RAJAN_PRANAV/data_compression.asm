@@ -22,12 +22,14 @@ buffer: .align 0 # align data elements to appropriate memory boundaries (MARS No
 prompt: .asciiz "Please enter a string of size less than 40 characters: " # null terminated string (P&H A-48)
 error_prompt: .asciiz "The characters have to be a-z and A-Z!\n" # null terminated string (P&H A-48)
 empty_prompt: .asciiz "An empty string was entered!\n" # null terminated string (P&H A-48)
-exit_statement: .asciiz "The string contains valid input"
+exit_statement: .asciiz "The string contains valid input" # null terminated string (P&H A-48)
+
 .text # store the items below this line (Program Instructions) in the text segment (P&H A-21)
 .globl main # declare that main is global and can be referenced from other files (P&H A-48, A-47)
 
 main: jal print_prompt # prompt the user for input
       jal is_valid # check if the input is valid
+      j Exit_Main # jump to the end of the main procedure
                        
 print_prompt:	li $v0, 4 # syscall 4 = write string (P&H A-44)
 		la $a0, prompt # load the memory address of the prompt string (MARS Notes)
@@ -106,6 +108,10 @@ Exit_Loop:	li $v0, 4 # syscall 4 = write string (P&H A-44)
 		lw $s0, 4($sp) # rstore register s0 to caller
 		addi $sp, $sp, 4 # adjust stack to delete 1 item
 		jr $ra # jump back to caller
+
+Exit_Main:	li $v0, 10 # syscall 19 = exit (P&H A-44)
+		syscall
+		
 		
 
 
