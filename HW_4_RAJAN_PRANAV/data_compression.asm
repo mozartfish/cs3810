@@ -8,6 +8,8 @@
 # the resulting compressed string. The input string only consists of 
 # alphabets ie. a-z and A-Z
 
+# The procedure call with caller and calle and save and restore is used in this program
+
 # The following sources were consulted and used:
 # 1) Appendix A from P&H 5th edition
 # 2) Professor Rajeev Balasubramonian MARS Notes
@@ -19,7 +21,7 @@
 .data #  store the items below this line in the data segment(P&H A-48, A-21)
 buffer: .align 0 # align data elements to appropriate memory boundaries (MARS Notes)
 	.space 45 # allocate 45 bytes as a read buffer for string input (MARS Notes)
-prompt: .asciiz "Please enter a string of size less than 40 characters: " # null terminated string (P&H A-48)
+prompt: .asciiz "Please enter a string of size less than 40 characters:\n" # null terminated string (P&H A-48)
 error_prompt: .asciiz "The characters have to be a-z and A-Z!\n" # null terminated string (P&H A-48)
 empty_prompt: .asciiz "An empty string was entered!\n" # null terminated string (P&H A-48)
 # exit_statement: .asciiz "The string contains valid input!\n" # null terminated string (P&H A-48) # for debugging purposes
@@ -86,8 +88,6 @@ check_3:
 				  # 0 otherwise
 		bne $t6, $zero, Error_Message # if 1, return error message
 
-
-
 check_4:	addi $t4, $zero, 122
 		sgt $t5, $t3, $t4 # check if current char[i] > 122 => z = 122
 				  # 1 if register t3 value > 122
@@ -102,7 +102,6 @@ Error_Message:	li $v0, 4 # syscall 4 = write string (P&H A-44)
 		syscall # write the error message
 		li $v0, 10 # syscall 10 = exit (P&H A-44)
 		syscall # quit the program
-		
 		
 Exit_Loop:	# li $v0, 4 # syscall 4 = write string (P&H A-44). For debugging purposes
 		# la $a0, exit_statement # load the address for the exit statement. For debugging purposes
