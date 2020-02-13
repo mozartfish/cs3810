@@ -197,7 +197,7 @@ count_check_4:	slti $t1, $s3, 40 # check if the counter < 40
 		j compress_Loop # jump back to the compression loop
 		
 print_one:	li $t1, 1 # load 1 into register t1
-		beq $s3, $t1, print_special # handle the single haracter occurrences
+		beq $s3, $t1, print_special # handle the single character occurrences
 		addi  $s3, $s3, 48 # get the ASCII value for the character
 		move $a0, $s3 # move the value from register s3 to register a0
 		li $v0, 11 # syscall 11 = print char
